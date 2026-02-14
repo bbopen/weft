@@ -57,11 +57,11 @@ pub fn rgb(red: Int, green: Int, blue: Int) -> Color {
 
 /// A typed, safe set of layout and style attributes.
 pub opaque type Attribute {
-  Attribute(props: List(css.Property))
+  Attribute(styles: List(css.Style))
 }
 
-fn attr(props: List(css.Property)) -> Attribute {
-  Attribute(props: props)
+fn attr(styles: List(css.Style)) -> Attribute {
+  Attribute(styles: styles)
 }
 
 fn px_value(pixels: Int) -> String {
@@ -182,7 +182,7 @@ pub fn text_color(color: Color) -> Attribute {
   attr([css.property("color", rgb_value(color))])
 }
 
-fn width_properties(length: Length) -> List(css.Property) {
+fn width_properties(length: Length) -> List(css.Style) {
   case length {
     Fill ->
       [
@@ -221,7 +221,7 @@ fn width_properties(length: Length) -> List(css.Property) {
   }
 }
 
-fn height_properties(length: Length) -> List(css.Property) {
+fn height_properties(length: Length) -> List(css.Style) {
   case length {
     Fill ->
       [
@@ -272,13 +272,13 @@ pub fn height(length: Length) -> Attribute {
 
 /// Build a Sketch `css.Class` from a list of `Attribute`s.
 pub fn class(attrs: List(Attribute)) -> css.Class {
-  let props =
+  let styles =
     attrs
     |> list.flat_map(fn(attr) {
       case attr {
-        Attribute(props: props) -> props
+        Attribute(styles: styles) -> styles
       }
     })
 
-  css.class(props)
+  css.class(styles)
 }

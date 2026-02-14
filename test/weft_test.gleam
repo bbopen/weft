@@ -1,6 +1,6 @@
 import startest.{describe, it}
 import startest/expect
-import sketch/css
+import sketch
 import weft
 
 pub fn main() {
@@ -27,11 +27,18 @@ pub fn weft_tests() {
       }),
     ]),
     describe("class", [
-      it("builds a class name", fn() {
-        [weft.padding(pixels: 1)]
-        |> weft.class
-        |> css.class_name
-        |> expect.to_not_equal(expected: "")
+      it("produces a class name", fn() {
+        let class = weft.class([weft.padding(pixels: 1)])
+
+        case sketch.stylesheet(strategy: sketch.Ephemeral) {
+          Ok(stylesheet) -> {
+            let #(_, class_name) = sketch.class_name(class, stylesheet)
+            (class_name != "") |> expect.to_equal(expected: True)
+          }
+
+          Error(_) ->
+            0 |> expect.to_equal(expected: 1)
+        }
       }),
     ]),
   ])
