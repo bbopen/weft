@@ -1067,6 +1067,104 @@ pub fn weft_tests() {
         |> weft.overlay_placement_side
         |> expect.to_equal(expected: weft.overlay_side_above())
       }),
+      it(
+        "restores default side order when an empty prefer list is passed",
+        fn() {
+          let anchor = weft.rect(x: 10, y: 90, width: 10, height: 10)
+          let overlay = weft.size(width: 30, height: 30)
+          let viewport = weft.rect(x: 0, y: 0, width: 100, height: 100)
+
+          let with_empty =
+            weft.overlay_problem(
+              anchor: anchor,
+              overlay: overlay,
+              viewport: viewport,
+            )
+            |> weft.overlay_prefer_sides(sides: [])
+
+          let with_left_only =
+            weft.overlay_problem(
+              anchor: anchor,
+              overlay: overlay,
+              viewport: viewport,
+            )
+            |> weft.overlay_prefer_sides(sides: [weft.overlay_side_left()])
+
+          weft.solve_overlay(problem: with_empty)
+          |> weft.overlay_solution_placement
+          |> weft.overlay_placement_side
+          |> expect.to_equal(expected: weft.overlay_side_above())
+
+          weft.solve_overlay(problem: with_left_only)
+          |> weft.overlay_solution_placement
+          |> weft.overlay_placement_side
+          |> expect.to_equal(expected: weft.overlay_side_left())
+        },
+      ),
+      it("restores default alignments when an empty align list is passed", fn() {
+        let anchor = weft.rect(x: 30, y: 10, width: 20, height: 10)
+        let overlay = weft.size(width: 30, height: 20)
+        let viewport = weft.rect(x: 0, y: 0, width: 200, height: 200)
+
+        let with_default =
+          weft.overlay_problem(
+            anchor: anchor,
+            overlay: overlay,
+            viewport: viewport,
+          )
+          |> weft.overlay_prefer_sides(sides: [weft.overlay_side_below()])
+          |> weft.overlay_alignments(aligns: [])
+
+        let with_start =
+          weft.overlay_problem(
+            anchor: anchor,
+            overlay: overlay,
+            viewport: viewport,
+          )
+          |> weft.overlay_prefer_sides(sides: [weft.overlay_side_below()])
+          |> weft.overlay_alignments(aligns: [weft.overlay_align_start()])
+
+        let solution_default = weft.solve_overlay(problem: with_default)
+        let solution_start = weft.solve_overlay(problem: with_start)
+
+        weft.overlay_solution_x(solution: solution_default)
+        |> expect.to_equal(expected: 25)
+
+        weft.overlay_solution_x(solution: solution_start)
+        |> expect.to_equal(expected: 30)
+      }),
+      it("normalizes negative offset/padding to zero", fn() {
+        let anchor = weft.rect(x: 10, y: 10, width: 10, height: 10)
+        let overlay = weft.size(width: 20, height: 20)
+        let viewport = weft.rect(x: 0, y: 0, width: 100, height: 100)
+
+        let zero =
+          weft.overlay_problem(
+            anchor: anchor,
+            overlay: overlay,
+            viewport: viewport,
+          )
+          |> weft.overlay_offset(pixels: 0)
+          |> weft.overlay_padding(pixels: 0)
+
+        let adjusted =
+          weft.overlay_problem(
+            anchor: anchor,
+            overlay: overlay,
+            viewport: viewport,
+          )
+          |> weft.overlay_offset(pixels: -12)
+          |> weft.overlay_padding(pixels: -20)
+
+        let a = weft.solve_overlay(problem: zero)
+        let b = weft.solve_overlay(problem: adjusted)
+
+        weft.overlay_solution_x(solution: a)
+        |> expect.to_equal(expected: weft.overlay_solution_x(solution: b))
+
+        weft.overlay_solution_y(solution: a)
+        |> expect.to_equal(expected: weft.overlay_solution_y(solution: b))
+      }),
       it("shifts along the cross-axis to stay within viewport padding", fn() {
         let anchor = weft.rect(x: 95, y: 10, width: 5, height: 5)
         let overlay = weft.size(width: 30, height: 20)
