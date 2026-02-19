@@ -865,6 +865,76 @@ pub fn weft_tests() {
         |> expect.to_equal(expected: weft.stylesheet(classes: [b]))
       }),
     ]),
+    describe("when_container", [
+      it("renders @container blocks", fn() {
+        let query = weft.container_min_width(length: weft.px(pixels: 640))
+        let class =
+          weft.class(attrs: [
+            weft.when_container(query: query, attrs: [
+              weft.padding(pixels: 12),
+            ]),
+          ])
+
+        let css = weft.stylesheet(classes: [class])
+
+        string.contains(css, "@container (min-width:640px){\n")
+        |> expect.to_equal(expected: True)
+
+        string.contains(css, "padding:12px;")
+        |> expect.to_equal(expected: True)
+      }),
+      it("supports container-inline-size and container-name declarations", fn() {
+        let class =
+          weft.class(attrs: [
+            weft.container_inline_size(),
+            weft.container_name(value: "dashboard"),
+          ])
+
+        let css = weft.stylesheet(classes: [class])
+
+        string.contains(css, "container-type:inline-size;")
+        |> expect.to_equal(expected: True)
+
+        string.contains(css, "container-name:dashboard;")
+        |> expect.to_equal(expected: True)
+      }),
+      it("is order-independent across distinct container queries", fn() {
+        let a =
+          weft.class(attrs: [
+            weft.when_container(
+              query: weft.container_min_width(length: weft.px(pixels: 640)),
+              attrs: [
+                weft.padding(pixels: 1),
+              ],
+            ),
+            weft.when_container(
+              query: weft.container_max_width(length: weft.px(pixels: 900)),
+              attrs: [
+                weft.padding(pixels: 2),
+              ],
+            ),
+          ])
+
+        let b =
+          weft.class(attrs: [
+            weft.when_container(
+              query: weft.container_max_width(length: weft.px(pixels: 900)),
+              attrs: [
+                weft.padding(pixels: 2),
+              ],
+            ),
+            weft.when_container(
+              query: weft.container_min_width(length: weft.px(pixels: 640)),
+              attrs: [
+                weft.padding(pixels: 1),
+              ],
+            ),
+          ])
+
+        weft.class_name(class: a)
+        |> expect.to_equal(expected: weft.class_name(class: b))
+      }),
+    ]),
     describe("transitions", [
       it("renders a single transition via transition()", fn() {
         let class =

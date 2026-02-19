@@ -584,6 +584,11 @@ pub opaque type MediaQuery {
   MediaQuery(value: String)
 }
 
+/// A typed `@container` query.
+pub opaque type ContainerQuery {
+  ContainerQuery(value: String)
+}
+
 /// A font family token (named or generic).
 pub opaque type FontFamily {
   FontFamily(value: String)
@@ -640,26 +645,38 @@ type Rule {
     declarations: List(Declaration),
     pseudos: List(#(String, Rule)),
     medias: List(#(String, Rule)),
+    containers: List(#(String, Rule)),
   )
 }
 
 fn rule_empty() -> Rule {
-  Rule(declarations: [], pseudos: [], medias: [])
+  Rule(declarations: [], pseudos: [], medias: [], containers: [])
 }
 
 fn rule_from_declarations(declarations: List(Declaration)) -> Rule {
-  Rule(declarations: declarations, pseudos: [], medias: [])
+  Rule(declarations: declarations, pseudos: [], medias: [], containers: [])
 }
 
 fn rule_merge(a: Rule, b: Rule) -> Rule {
   case a, b {
-    Rule(declarations: a_decls, pseudos: a_pseudos, medias: a_medias),
-      Rule(declarations: b_decls, pseudos: b_pseudos, medias: b_medias)
+    Rule(
+      declarations: a_decls,
+      pseudos: a_pseudos,
+      medias: a_medias,
+      containers: a_containers,
+    ),
+      Rule(
+        declarations: b_decls,
+        pseudos: b_pseudos,
+        medias: b_medias,
+        containers: b_containers,
+      )
     ->
       Rule(
         declarations: list.append(a_decls, b_decls),
         pseudos: keyed_rule_merge(a_pseudos, b_pseudos),
         medias: keyed_rule_merge(a_medias, b_medias),
+        containers: keyed_rule_merge(a_containers, b_containers),
       )
   }
 }
@@ -689,13 +706,14 @@ fn keyed_rule_upsert(
 
 fn rule_normalize(rule: Rule) -> Rule {
   case rule {
-    Rule(declarations:, pseudos:, medias:) ->
+    Rule(declarations:, pseudos:, medias:, containers:) ->
       Rule(
         declarations: declarations
           |> declarations_last_write_wins
           |> sort_declarations,
         pseudos: pseudos |> keyed_rule_normalize |> sort_keyed_rules,
         medias: medias |> keyed_rule_normalize |> sort_keyed_rules,
+        containers: containers |> keyed_rule_normalize |> sort_keyed_rules,
       )
   }
 }
@@ -1014,6 +1032,12 @@ fn grid_auto_flow_value(flow: GridAutoFlow) -> String {
 fn media_query_value(query: MediaQuery) -> String {
   case query {
     MediaQuery(value:) -> value
+  }
+}
+
+fn container_query_value(query: ContainerQuery) -> String {
+  case query {
+    ContainerQuery(value:) -> value
   }
 }
 
@@ -1719,6 +1743,16 @@ pub fn max_width(length length: CssLength) -> MediaQuery {
   MediaQuery(value: "(max-width:" <> css_length_value(length) <> ")")
 }
 
+/// An unnamed `min-width` container query.
+pub fn container_min_width(length length: CssLength) -> ContainerQuery {
+  ContainerQuery(value: "(min-width:" <> css_length_value(length) <> ")")
+}
+
+/// An unnamed `max-width` container query.
+pub fn container_max_width(length length: CssLength) -> ContainerQuery {
+  ContainerQuery(value: "(max-width:" <> css_length_value(length) <> ")")
+}
+
 /// A `prefers-reduced-motion: reduce` media query.
 pub fn prefers_reduced_motion() -> MediaQuery {
   MediaQuery(value: "(prefers-reduced-motion:reduce)")
@@ -1738,6 +1772,18 @@ pub fn prefers_color_scheme_light() -> MediaQuery {
 pub fn media_and(left left: MediaQuery, right right: MediaQuery) -> MediaQuery {
   MediaQuery(
     value: media_query_value(left) <> " and " <> media_query_value(right),
+  )
+}
+
+/// Combine two container queries with `and`.
+pub fn container_and(
+  left left: ContainerQuery,
+  right right: ContainerQuery,
+) -> ContainerQuery {
+  ContainerQuery(
+    value: container_query_value(left)
+    <> " and "
+    <> container_query_value(right),
   )
 }
 
@@ -2734,6 +2780,29 @@ pub fn scroll_behavior(behavior behavior: ScrollBehavior) -> Attribute {
   )
 }
 
+/// Enable inline-size container query behavior.
+pub fn container_inline_size() -> Attribute {
+  attr(
+    rule_from_declarations([
+      Declaration(property: "container-type", value: "inline-size"),
+    ]),
+  )
+}
+
+/// Set the container name used by named `@container` rules.
+pub fn container_name(value value: String) -> Attribute {
+  let normalized = case string.trim(value) {
+    "" -> "container"
+    name -> name
+  }
+
+  attr(
+    rule_from_declarations([
+      Declaration(property: "container-name", value: normalized),
+    ]),
+  )
+}
+
 /// Set the scroll snap type for a scroll container.
 pub fn scroll_snap_type(value value: ScrollSnapType) -> Attribute {
   attr(
@@ -3060,17 +3129,48 @@ fn rule_from_attrs(attrs: List(Attribute)) -> Rule {
 
 fn pseudo(pseudo: String, attrs: List(Attribute)) -> Attribute {
   let nested = rule_from_attrs(attrs)
-  attr(Rule(declarations: [], pseudos: [#(pseudo, nested)], medias: []))
+  attr(
+    Rule(
+      declarations: [],
+      pseudos: [#(pseudo, nested)],
+      medias: [],
+      containers: [],
+    ),
+  )
 }
 
 fn media(query: String, attrs: List(Attribute)) -> Attribute {
   let nested = rule_from_attrs(attrs)
-  attr(Rule(declarations: [], pseudos: [], medias: [#(query, nested)]))
+  attr(
+    Rule(
+      declarations: [],
+      pseudos: [],
+      medias: [#(query, nested)],
+      containers: [],
+    ),
+  )
+}
+
+fn container(query: String, attrs: List(Attribute)) -> Attribute {
+  let nested = rule_from_attrs(attrs)
+  attr(
+    Rule(declarations: [], pseudos: [], medias: [], containers: [
+      #(query, nested),
+    ]),
+  )
 }
 
 /// Apply attributes within a media query (`@media ...`).
 pub fn when(query query: MediaQuery, attrs attrs: List(Attribute)) -> Attribute {
   media(media_query_value(query), attrs)
+}
+
+/// Apply attributes within a container query (`@container ...`).
+pub fn when_container(
+  query query: ContainerQuery,
+  attrs attrs: List(Attribute),
+) -> Attribute {
+  container(container_query_value(query), attrs)
 }
 
 /// Apply attributes on mouse hover (`:hover`).
@@ -3169,7 +3269,7 @@ fn to_lower_hex_8_loop(
 
 fn rule_to_css(selector: String, rule: Rule) -> String {
   case rule {
-    Rule(declarations:, pseudos:, medias:) -> {
+    Rule(declarations:, pseudos:, medias:, containers:) -> {
       let base = case declarations {
         [] -> ""
         _ -> selector <> "{" <> declarations_to_css(declarations) <> "}\n"
@@ -3198,7 +3298,21 @@ fn rule_to_css(selector: String, rule: Rule) -> String {
         })
         |> string.concat
 
-      base <> pseudo_css <> media_css
+      let container_css =
+        containers
+        |> list.map(fn(pair) {
+          case pair {
+            #(query, nested) ->
+              "@container "
+              <> query
+              <> "{\n"
+              <> rule_to_css(selector, nested)
+              <> "}\n"
+          }
+        })
+        |> string.concat
+
+      base <> pseudo_css <> media_css <> container_css
     }
   }
 }
