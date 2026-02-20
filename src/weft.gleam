@@ -633,7 +633,7 @@ pub opaque type Attribute {
 
 /// A compiled, named style rule-set.
 pub opaque type Class {
-  Class(name: String, rule: Rule)
+  Class(name: String, rule: Rule, extra_classes: List(String))
 }
 
 type Declaration {
@@ -646,15 +646,31 @@ type Rule {
     pseudos: List(#(String, Rule)),
     medias: List(#(String, Rule)),
     containers: List(#(String, Rule)),
+    ancestors: List(#(String, Rule)),
+    extra_classes: List(String),
   )
 }
 
 fn rule_empty() -> Rule {
-  Rule(declarations: [], pseudos: [], medias: [], containers: [])
+  Rule(
+    declarations: [],
+    pseudos: [],
+    medias: [],
+    containers: [],
+    ancestors: [],
+    extra_classes: [],
+  )
 }
 
 fn rule_from_declarations(declarations: List(Declaration)) -> Rule {
-  Rule(declarations: declarations, pseudos: [], medias: [], containers: [])
+  Rule(
+    declarations: declarations,
+    pseudos: [],
+    medias: [],
+    containers: [],
+    ancestors: [],
+    extra_classes: [],
+  )
 }
 
 fn rule_merge(a: Rule, b: Rule) -> Rule {
@@ -664,12 +680,16 @@ fn rule_merge(a: Rule, b: Rule) -> Rule {
       pseudos: a_pseudos,
       medias: a_medias,
       containers: a_containers,
+      ancestors: a_ancestors,
+      extra_classes: a_extra,
     ),
       Rule(
         declarations: b_decls,
         pseudos: b_pseudos,
         medias: b_medias,
         containers: b_containers,
+        ancestors: b_ancestors,
+        extra_classes: b_extra,
       )
     ->
       Rule(
@@ -677,6 +697,8 @@ fn rule_merge(a: Rule, b: Rule) -> Rule {
         pseudos: keyed_rule_merge(a_pseudos, b_pseudos),
         medias: keyed_rule_merge(a_medias, b_medias),
         containers: keyed_rule_merge(a_containers, b_containers),
+        ancestors: keyed_rule_merge(a_ancestors, b_ancestors),
+        extra_classes: list.append(a_extra, b_extra),
       )
   }
 }
@@ -706,7 +728,14 @@ fn keyed_rule_upsert(
 
 fn rule_normalize(rule: Rule) -> Rule {
   case rule {
-    Rule(declarations:, pseudos:, medias:, containers:) ->
+    Rule(
+      declarations:,
+      pseudos:,
+      medias:,
+      containers:,
+      ancestors:,
+      extra_classes:,
+    ) ->
       Rule(
         declarations: declarations
           |> declarations_last_write_wins
@@ -714,6 +743,8 @@ fn rule_normalize(rule: Rule) -> Rule {
         pseudos: pseudos |> keyed_rule_normalize |> sort_keyed_rules,
         medias: medias |> keyed_rule_normalize |> sort_keyed_rules,
         containers: containers |> keyed_rule_normalize |> sort_keyed_rules,
+        ancestors: ancestors |> keyed_rule_normalize |> sort_keyed_rules,
+        extra_classes: extra_classes |> list.unique |> list.sort(string.compare),
       )
   }
 }
@@ -877,6 +908,13 @@ pub fn vw(vw vw: Float) -> CssLength {
 /// A viewport height length (for example `10vh`).
 pub fn vh(vh vh: Float) -> CssLength {
   css_length_from_float("vh", vh)
+}
+
+/// CSS `fit-content` length — shrink-wraps to content width, bounded by available space.
+///
+/// Distinct from `shrink()` which generates `max-content` sizing via flex.
+pub fn fit_content() -> CssLength {
+  CssLength(value: "fit-content")
 }
 
 fn duration_value(duration: Duration) -> String {
@@ -3135,6 +3173,8 @@ fn pseudo(pseudo: String, attrs: List(Attribute)) -> Attribute {
       pseudos: [#(pseudo, nested)],
       medias: [],
       containers: [],
+      ancestors: [],
+      extra_classes: [],
     ),
   )
 }
@@ -3147,6 +3187,8 @@ fn media(query: String, attrs: List(Attribute)) -> Attribute {
       pseudos: [],
       medias: [#(query, nested)],
       containers: [],
+      ancestors: [],
+      extra_classes: [],
     ),
   )
 }
@@ -3154,9 +3196,33 @@ fn media(query: String, attrs: List(Attribute)) -> Attribute {
 fn container(query: String, attrs: List(Attribute)) -> Attribute {
   let nested = rule_from_attrs(attrs)
   attr(
-    Rule(declarations: [], pseudos: [], medias: [], containers: [
-      #(query, nested),
-    ]),
+    Rule(
+      declarations: [],
+      pseudos: [],
+      medias: [],
+      containers: [#(query, nested)],
+      ancestors: [],
+      extra_classes: [],
+    ),
+  )
+}
+
+fn ancestor_pseudo(
+  ancestor_class: String,
+  pseudo_name: String,
+  attrs: List(Attribute),
+) -> Attribute {
+  let nested = rule_from_attrs(attrs)
+  let key = "." <> ancestor_class <> ":" <> pseudo_name <> " "
+  attr(
+    Rule(
+      declarations: [],
+      pseudos: [],
+      medias: [],
+      containers: [],
+      ancestors: [#(key, nested)],
+      extra_classes: [],
+    ),
   )
 }
 
@@ -3201,6 +3267,116 @@ pub fn focus_visible(attrs attrs: List(Attribute)) -> Attribute {
 /// Apply attributes when focus is within (`:focus-within`).
 pub fn focus_within(attrs attrs: List(Attribute)) -> Attribute {
   pseudo("focus-within", attrs)
+}
+
+fn group_static_class(name: String) -> String {
+  "weft-group-" <> name
+}
+
+/// Mark this element as a hover group anchor with the given name.
+///
+/// Adds the static CSS class `weft-group-<name>` to the element.
+/// Use `group_hover` on descendant elements to respond when this ancestor
+/// is hovered.
+pub fn group(name name: String) -> Attribute {
+  class_name_attr(group_static_class(name))
+}
+
+fn class_name_attr(static_class: String) -> Attribute {
+  attr(
+    Rule(
+      declarations: [],
+      pseudos: [],
+      medias: [],
+      containers: [],
+      ancestors: [],
+      extra_classes: [static_class],
+    ),
+  )
+}
+
+/// Apply attrs when an ancestor marked with `group(name:)` is hovered.
+///
+/// Generates CSS: `.weft-group-<name>:hover .<class> { ... }`
+pub fn group_hover(
+  group group: String,
+  attrs attrs: List(Attribute),
+) -> Attribute {
+  ancestor_pseudo(group_static_class(group), "hover", attrs)
+}
+
+/// Apply margin to all sides.
+pub fn margin(pixels pixels: Int) -> Attribute {
+  attr(
+    rule_from_declarations([
+      Declaration(property: "margin", value: int.to_string(pixels) <> "px"),
+    ]),
+  )
+}
+
+/// Apply horizontal and vertical margin.
+///
+/// `x` is left/right, `y` is top/bottom.
+pub fn margin_xy(x x: Int, y y: Int) -> Attribute {
+  attr(
+    rule_from_declarations([
+      Declaration(
+        property: "margin",
+        value: int.to_string(y) <> "px " <> int.to_string(x) <> "px",
+      ),
+    ]),
+  )
+}
+
+/// Apply top margin only.
+pub fn margin_top(pixels pixels: Int) -> Attribute {
+  attr(
+    rule_from_declarations([
+      Declaration(property: "margin-top", value: int.to_string(pixels) <> "px"),
+    ]),
+  )
+}
+
+/// Apply bottom margin only.
+pub fn margin_bottom(pixels pixels: Int) -> Attribute {
+  attr(
+    rule_from_declarations([
+      Declaration(
+        property: "margin-bottom",
+        value: int.to_string(pixels) <> "px",
+      ),
+    ]),
+  )
+}
+
+/// A named responsive breakpoint for use with `hide_below`/`show_below`.
+pub type Breakpoint {
+  /// Below 768px — phone portrait and smaller.
+  MobileBreakpoint
+  /// Below 1024px — tablet and small laptop.
+  TabletBreakpoint
+}
+
+/// Hide this element below the given breakpoint (`display: none` in media query).
+pub fn hide_below(breakpoint breakpoint: Breakpoint) -> Attribute {
+  case breakpoint {
+    MobileBreakpoint ->
+      when(query: max_width(length: px(pixels: 767)), attrs: [display_none()])
+    TabletBreakpoint ->
+      when(query: max_width(length: px(pixels: 1023)), attrs: [display_none()])
+  }
+}
+
+/// Show this element only below the given breakpoint.
+///
+/// The element is hidden above the breakpoint via this attribute.
+pub fn show_below(breakpoint breakpoint: Breakpoint) -> Attribute {
+  case breakpoint {
+    MobileBreakpoint ->
+      when(query: min_width(length: px(pixels: 768)), attrs: [display_none()])
+    TabletBreakpoint ->
+      when(query: min_width(length: px(pixels: 1024)), attrs: [display_none()])
+  }
 }
 
 fn attribute_rule(attribute: Attribute) -> Rule {
@@ -3269,7 +3445,14 @@ fn to_lower_hex_8_loop(
 
 fn rule_to_css(selector: String, rule: Rule) -> String {
   case rule {
-    Rule(declarations:, pseudos:, medias:, containers:) -> {
+    Rule(
+      declarations:,
+      pseudos:,
+      medias:,
+      containers:,
+      ancestors:,
+      extra_classes: _,
+    ) -> {
       let base = case declarations {
         [] -> ""
         _ -> selector <> "{" <> declarations_to_css(declarations) <> "}\n"
@@ -3312,7 +3495,17 @@ fn rule_to_css(selector: String, rule: Rule) -> String {
         })
         |> string.concat
 
-      base <> pseudo_css <> media_css <> container_css
+      let ancestor_css =
+        ancestors
+        |> list.map(fn(pair) {
+          case pair {
+            #(ancestor_selector, nested) ->
+              rule_to_css(ancestor_selector <> selector, nested)
+          }
+        })
+        |> string.concat
+
+      base <> pseudo_css <> media_css <> container_css <> ancestor_css
     }
   }
 }
@@ -3335,23 +3528,37 @@ pub fn class(attrs attrs: List(Attribute)) -> Class {
     |> list.fold(rule_empty(), rule_merge)
     |> rule_normalize
 
+  let extra_classes = case merged {
+    Rule(extra_classes:, ..) -> extra_classes
+  }
+
   let serialized = rule_to_css(".x", merged)
   let hash = fnv1a_32(serialized)
   let name = "wf-" <> to_lower_hex_8(hash)
 
-  Class(name: name, rule: merged)
+  Class(name: name, rule: merged, extra_classes: extra_classes)
 }
 
 /// Get the deterministic class name (for example `wf-deadbeef`).
 pub fn class_name(class class: Class) -> String {
   case class {
-    Class(name:, rule: _) -> name
+    Class(name:, rule: _, extra_classes: _) -> name
+  }
+}
+
+/// Get any extra static CSS class names attached to this class.
+///
+/// Used by renderers to apply additional classes (for example `weft-group-<name>`)
+/// beyond the single deterministic hash-based class name.
+pub fn class_extra_names(class class: Class) -> List(String) {
+  case class {
+    Class(name: _, rule: _, extra_classes:) -> extra_classes
   }
 }
 
 fn class_css(class: Class) -> String {
   case class {
-    Class(name:, rule:) -> rule_to_css("." <> name, rule)
+    Class(name:, rule:, extra_classes: _) -> rule_to_css("." <> name, rule)
   }
 }
 

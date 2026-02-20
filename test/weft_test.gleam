@@ -1338,5 +1338,211 @@ pub fn weft_tests() {
         |> expect.to_equal(expected: 4)
       }),
     ]),
+    describe("margin", [
+      it("sets uniform margin on all sides", fn() {
+        let class = weft.class(attrs: [weft.margin(pixels: 8)])
+        let css = weft.stylesheet(classes: [class])
+
+        string.contains(css, "margin:8px;")
+        |> expect.to_equal(expected: True)
+      }),
+      it("sets zero margin", fn() {
+        let class = weft.class(attrs: [weft.margin(pixels: 0)])
+        let css = weft.stylesheet(classes: [class])
+
+        string.contains(css, "margin:0px;")
+        |> expect.to_equal(expected: True)
+      }),
+    ]),
+    describe("margin_xy", [
+      it("uses CSS margin shorthand (y then x)", fn() {
+        let class = weft.class(attrs: [weft.margin_xy(x: 4, y: 8)])
+        let css = weft.stylesheet(classes: [class])
+
+        string.contains(css, "margin:8px 4px;")
+        |> expect.to_equal(expected: True)
+      }),
+      it("is order-independent with other attributes", fn() {
+        let a =
+          weft.class(attrs: [
+            weft.margin_xy(x: 4, y: 8),
+            weft.padding(pixels: 2),
+          ])
+
+        let b =
+          weft.class(attrs: [
+            weft.padding(pixels: 2),
+            weft.margin_xy(x: 4, y: 8),
+          ])
+
+        weft.class_name(class: a)
+        |> expect.to_equal(expected: weft.class_name(class: b))
+      }),
+    ]),
+    describe("margin_top", [
+      it("sets margin-top only", fn() {
+        let class = weft.class(attrs: [weft.margin_top(pixels: 12)])
+        let css = weft.stylesheet(classes: [class])
+
+        string.contains(css, "margin-top:12px;")
+        |> expect.to_equal(expected: True)
+      }),
+    ]),
+    describe("margin_bottom", [
+      it("sets margin-bottom only", fn() {
+        let class = weft.class(attrs: [weft.margin_bottom(pixels: 16)])
+        let css = weft.stylesheet(classes: [class])
+
+        string.contains(css, "margin-bottom:16px;")
+        |> expect.to_equal(expected: True)
+      }),
+    ]),
+    describe("fit_content", [
+      it("generates fit-content as a CssLength value", fn() {
+        let class =
+          weft.class(attrs: [
+            weft.width(length: weft.fixed(length: weft.fit_content())),
+          ])
+        let css = weft.stylesheet(classes: [class])
+
+        string.contains(css, "width:fit-content;")
+        |> expect.to_equal(expected: True)
+      }),
+      it("can be used in a min-width constraint", fn() {
+        let class =
+          weft.class(attrs: [
+            weft.width(length: weft.minimum(
+              base: weft.shrink(),
+              min: weft.fit_content(),
+            )),
+          ])
+        let css = weft.stylesheet(classes: [class])
+
+        string.contains(css, "min-width:fit-content;")
+        |> expect.to_equal(expected: True)
+      }),
+    ]),
+    describe("group", [
+      it("attaches the weft-group-<name> class as an extra class", fn() {
+        let class = weft.class(attrs: [weft.group(name: "card")])
+
+        weft.class_extra_names(class: class)
+        |> expect.to_equal(expected: ["weft-group-card"])
+      }),
+      it("deduplicates extra class names when group is applied twice", fn() {
+        let class =
+          weft.class(attrs: [weft.group(name: "row"), weft.group(name: "row")])
+
+        weft.class_extra_names(class: class)
+        |> expect.to_equal(expected: ["weft-group-row"])
+      }),
+      it("accumulates multiple distinct group names", fn() {
+        let class =
+          weft.class(attrs: [
+            weft.group(name: "alpha"),
+            weft.group(name: "beta"),
+          ])
+
+        weft.class_extra_names(class: class)
+        |> expect.to_equal(expected: ["weft-group-alpha", "weft-group-beta"])
+      }),
+    ]),
+    describe("group_hover", [
+      it("generates an ancestor-scoped :hover rule", fn() {
+        let class =
+          weft.class(attrs: [
+            weft.group_hover(group: "card", attrs: [
+              weft.background(color: weft.rgb(red: 1, green: 2, blue: 3)),
+            ]),
+          ])
+
+        let css = weft.stylesheet(classes: [class])
+        let class_name = weft.class_name(class: class)
+
+        string.contains(
+          css,
+          ".weft-group-card:hover ."
+            <> class_name
+            <> "{background-color:rgb(1, 2, 3);}",
+        )
+        |> expect.to_equal(expected: True)
+      }),
+      it("is order-independent within the nested rules", fn() {
+        let a =
+          weft.class(attrs: [
+            weft.group_hover(group: "card", attrs: [
+              weft.background(color: weft.rgb(red: 1, green: 2, blue: 3)),
+              weft.text_color(color: weft.rgb(red: 4, green: 5, blue: 6)),
+            ]),
+          ])
+
+        let b =
+          weft.class(attrs: [
+            weft.group_hover(group: "card", attrs: [
+              weft.text_color(color: weft.rgb(red: 4, green: 5, blue: 6)),
+              weft.background(color: weft.rgb(red: 1, green: 2, blue: 3)),
+            ]),
+          ])
+
+        weft.class_name(class: a)
+        |> expect.to_equal(expected: weft.class_name(class: b))
+      }),
+    ]),
+    describe("hide_below", [
+      it("MobileBreakpoint hides below 768px", fn() {
+        let class =
+          weft.class(attrs: [weft.hide_below(breakpoint: weft.MobileBreakpoint)])
+        let css = weft.stylesheet(classes: [class])
+
+        string.contains(css, "@media (max-width:767px)")
+        |> expect.to_equal(expected: True)
+
+        string.contains(css, "display:none;")
+        |> expect.to_equal(expected: True)
+      }),
+      it("TabletBreakpoint hides below 1024px", fn() {
+        let class =
+          weft.class(attrs: [weft.hide_below(breakpoint: weft.TabletBreakpoint)])
+        let css = weft.stylesheet(classes: [class])
+
+        string.contains(css, "@media (max-width:1023px)")
+        |> expect.to_equal(expected: True)
+
+        string.contains(css, "display:none;")
+        |> expect.to_equal(expected: True)
+      }),
+    ]),
+    describe("show_below", [
+      it("MobileBreakpoint hides above 768px", fn() {
+        let class =
+          weft.class(attrs: [weft.show_below(breakpoint: weft.MobileBreakpoint)])
+        let css = weft.stylesheet(classes: [class])
+
+        string.contains(css, "@media (min-width:768px)")
+        |> expect.to_equal(expected: True)
+
+        string.contains(css, "display:none;")
+        |> expect.to_equal(expected: True)
+      }),
+      it("TabletBreakpoint hides above 1024px", fn() {
+        let class =
+          weft.class(attrs: [weft.show_below(breakpoint: weft.TabletBreakpoint)])
+        let css = weft.stylesheet(classes: [class])
+
+        string.contains(css, "@media (min-width:1024px)")
+        |> expect.to_equal(expected: True)
+
+        string.contains(css, "display:none;")
+        |> expect.to_equal(expected: True)
+      }),
+    ]),
+    describe("class_extra_names", [
+      it("returns an empty list when no extra classes are attached", fn() {
+        let class = weft.class(attrs: [weft.padding(pixels: 8)])
+
+        weft.class_extra_names(class: class)
+        |> expect.to_equal(expected: [])
+      }),
+    ]),
   ])
 }
