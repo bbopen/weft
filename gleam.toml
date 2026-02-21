@@ -2,7 +2,7 @@ name = "weft"
 version = "0.1.0"
 description = "Elm-UI-inspired layout primitives that generate deterministic CSS — core package (Lustre-free)."
 licences = ["Apache-2.0"]
-repository = { type = "github", user = "brettbonner", repo = "weft" }
+repository = { type = "github", user = "bbopen", repo = "weft" }
 gleam = ">= 1.14.0"
 
 [dependencies]
@@ -10,8 +10,3 @@ gleam_stdlib = ">= 0.69.0"
 
 [dev-dependencies]
 startest = ">= 0.8.0"
-
-[documentation]
-pages = [
-  { title = "Technical Specification", path = "SPEC.md", source = "SPEC.md" },
-]
