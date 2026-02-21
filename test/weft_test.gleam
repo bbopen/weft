@@ -1544,5 +1544,282 @@ pub fn weft_tests() {
         |> expect.to_equal(expected: [])
       }),
     ]),
+    describe("color_to_css", [
+      it("serializes rgb to its CSS string", fn() {
+        weft.color_to_css(color: weft.rgb(red: 255, green: 0, blue: 0))
+        |> expect.to_equal(expected: "rgb(255, 0, 0)")
+      }),
+      it("serializes rgba with deterministic alpha", fn() {
+        weft.color_to_css(color: weft.rgba(
+          red: 0,
+          green: 0,
+          blue: 0,
+          alpha: 0.5,
+        ))
+        |> expect.to_equal(expected: "rgba(0, 0, 0, 0.5)")
+      }),
+      it("serializes transparent", fn() {
+        weft.color_to_css(color: weft.transparent())
+        |> expect.to_equal(expected: "transparent")
+      }),
+      it("serializes currentColor", fn() {
+        weft.color_to_css(color: weft.current_color())
+        |> expect.to_equal(expected: "currentColor")
+      }),
+    ]),
+    describe("hsl", [
+      it("renders hsl() in CSS", fn() {
+        let class =
+          weft.class(attrs: [
+            weft.background(color: weft.hsl(
+              hue: 120,
+              saturation: 50,
+              lightness: 50,
+            )),
+          ])
+        let css = weft.stylesheet(classes: [class])
+
+        string.contains(css, "background-color:hsl(120, 50%, 50%);")
+        |> expect.to_equal(expected: True)
+      }),
+    ]),
+    describe("hsla", [
+      it("renders hsla() with alpha in CSS", fn() {
+        let class =
+          weft.class(attrs: [
+            weft.background(color: weft.hsla(
+              hue: 240,
+              saturation: 80,
+              lightness: 60,
+              alpha: 0.75,
+            )),
+          ])
+        let css = weft.stylesheet(classes: [class])
+
+        string.contains(css, "background-color:hsla(240, 80%, 60%, 0.75);")
+        |> expect.to_equal(expected: True)
+      }),
+      it("round-trips through color_to_css", fn() {
+        let color =
+          weft.hsla(hue: 0, saturation: 100, lightness: 50, alpha: 1.0)
+
+        weft.color_to_css(color: color)
+        |> expect.to_equal(expected: "hsla(0, 100%, 50%, 1)")
+      }),
+    ]),
+    describe("white_space", [
+      it("renders white-space:nowrap", fn() {
+        let class =
+          weft.class(attrs: [
+            weft.white_space(value: weft.white_space_nowrap()),
+          ])
+        let css = weft.stylesheet(classes: [class])
+
+        string.contains(css, "white-space:nowrap;")
+        |> expect.to_equal(expected: True)
+      }),
+      it("renders white-space:pre-wrap", fn() {
+        let class =
+          weft.class(attrs: [
+            weft.white_space(value: weft.white_space_pre_wrap()),
+          ])
+        let css = weft.stylesheet(classes: [class])
+
+        string.contains(css, "white-space:pre-wrap;")
+        |> expect.to_equal(expected: True)
+      }),
+    ]),
+    describe("text_overflow", [
+      it("renders text-overflow:ellipsis", fn() {
+        let class =
+          weft.class(attrs: [
+            weft.text_overflow(value: weft.text_overflow_ellipsis()),
+          ])
+        let css = weft.stylesheet(classes: [class])
+
+        string.contains(css, "text-overflow:ellipsis;")
+        |> expect.to_equal(expected: True)
+      }),
+    ]),
+    describe("text_transform", [
+      it("renders text-transform:uppercase", fn() {
+        let class =
+          weft.class(attrs: [
+            weft.text_transform(value: weft.text_transform_uppercase()),
+          ])
+        let css = weft.stylesheet(classes: [class])
+
+        string.contains(css, "text-transform:uppercase;")
+        |> expect.to_equal(expected: True)
+      }),
+    ]),
+    describe("word_break", [
+      it("renders word-break:break-all", fn() {
+        let class =
+          weft.class(attrs: [
+            weft.word_break(value: weft.word_break_break_all()),
+          ])
+        let css = weft.stylesheet(classes: [class])
+
+        string.contains(css, "word-break:break-all;")
+        |> expect.to_equal(expected: True)
+      }),
+    ]),
+    describe("overflow_wrap", [
+      it("renders overflow-wrap:break-word", fn() {
+        let class =
+          weft.class(attrs: [
+            weft.overflow_wrap(value: weft.overflow_wrap_break_word()),
+          ])
+        let css = weft.stylesheet(classes: [class])
+
+        string.contains(css, "overflow-wrap:break-word;")
+        |> expect.to_equal(expected: True)
+      }),
+    ]),
+    describe("color_scheme", [
+      it("renders color-scheme:dark", fn() {
+        let class =
+          weft.class(attrs: [
+            weft.color_scheme(scheme: weft.color_scheme_dark()),
+          ])
+        let css = weft.stylesheet(classes: [class])
+
+        string.contains(css, "color-scheme:dark;")
+        |> expect.to_equal(expected: True)
+      }),
+      it("renders color-scheme:light dark", fn() {
+        let class =
+          weft.class(attrs: [
+            weft.color_scheme(scheme: weft.color_scheme_light_dark()),
+          ])
+        let css = weft.stylesheet(classes: [class])
+
+        string.contains(css, "color-scheme:light dark;")
+        |> expect.to_equal(expected: True)
+      }),
+    ]),
+    describe("filter", [
+      it("renders filter functions joined by spaces", fn() {
+        let class =
+          weft.class(attrs: [
+            weft.filter(filters: [
+              weft.filter_blur(radius: weft.px(pixels: 4)),
+              weft.filter_brightness(amount: 1.2),
+            ]),
+          ])
+        let css = weft.stylesheet(classes: [class])
+
+        string.contains(css, "filter:blur(4px) brightness(1.2);")
+        |> expect.to_equal(expected: True)
+      }),
+      it("renders filter:none for an empty list", fn() {
+        let class = weft.class(attrs: [weft.filter(filters: [])])
+        let css = weft.stylesheet(classes: [class])
+
+        string.contains(css, "filter:none;")
+        |> expect.to_equal(expected: True)
+      }),
+    ]),
+    describe("backdrop_filter", [
+      it("renders backdrop-filter with blur", fn() {
+        let class =
+          weft.class(attrs: [
+            weft.backdrop_filter(filters: [
+              weft.filter_blur(radius: weft.px(pixels: 10)),
+            ]),
+          ])
+        let css = weft.stylesheet(classes: [class])
+
+        string.contains(css, "backdrop-filter:blur(10px);")
+        |> expect.to_equal(expected: True)
+      }),
+    ]),
+    describe("order", [
+      it("renders the CSS order property", fn() {
+        let class = weft.class(attrs: [weft.order(value: 3)])
+        let css = weft.stylesheet(classes: [class])
+
+        string.contains(css, "order:3;")
+        |> expect.to_equal(expected: True)
+      }),
+      it("supports negative values", fn() {
+        let class = weft.class(attrs: [weft.order(value: -1)])
+        let css = weft.stylesheet(classes: [class])
+
+        string.contains(css, "order:-1;")
+        |> expect.to_equal(expected: True)
+      }),
+    ]),
+    describe("rounded_per_corner", [
+      it("rounds individual corners", fn() {
+        let class =
+          weft.class(attrs: [
+            weft.rounded_top_left(radius: weft.px(pixels: 8)),
+            weft.rounded_bottom_right(radius: weft.px(pixels: 4)),
+          ])
+        let css = weft.stylesheet(classes: [class])
+
+        string.contains(css, "border-top-left-radius:8px;")
+        |> expect.to_equal(expected: True)
+
+        string.contains(css, "border-bottom-right-radius:4px;")
+        |> expect.to_equal(expected: True)
+      }),
+    ]),
+    describe("margin_left", [
+      it("sets margin-left only", fn() {
+        let class = weft.class(attrs: [weft.margin_left(pixels: 20)])
+        let css = weft.stylesheet(classes: [class])
+
+        string.contains(css, "margin-left:20px;")
+        |> expect.to_equal(expected: True)
+      }),
+    ]),
+    describe("margin_right", [
+      it("sets margin-right only", fn() {
+        let class = weft.class(attrs: [weft.margin_right(pixels: 24)])
+        let css = weft.stylesheet(classes: [class])
+
+        string.contains(css, "margin-right:24px;")
+        |> expect.to_equal(expected: True)
+      }),
+    ]),
+    describe("padding_top", [
+      it("sets padding-top only", fn() {
+        let class = weft.class(attrs: [weft.padding_top(pixels: 10)])
+        let css = weft.stylesheet(classes: [class])
+
+        string.contains(css, "padding-top:10px;")
+        |> expect.to_equal(expected: True)
+      }),
+    ]),
+    describe("padding_bottom", [
+      it("sets padding-bottom only", fn() {
+        let class = weft.class(attrs: [weft.padding_bottom(pixels: 10)])
+        let css = weft.stylesheet(classes: [class])
+
+        string.contains(css, "padding-bottom:10px;")
+        |> expect.to_equal(expected: True)
+      }),
+    ]),
+    describe("padding_left", [
+      it("sets padding-left only", fn() {
+        let class = weft.class(attrs: [weft.padding_left(pixels: 16)])
+        let css = weft.stylesheet(classes: [class])
+
+        string.contains(css, "padding-left:16px;")
+        |> expect.to_equal(expected: True)
+      }),
+    ]),
+    describe("padding_right", [
+      it("sets padding-right only", fn() {
+        let class = weft.class(attrs: [weft.padding_right(pixels: 16)])
+        let css = weft.stylesheet(classes: [class])
+
+        string.contains(css, "padding-right:16px;")
+        |> expect.to_equal(expected: True)
+      }),
+    ]),
   ])
 }

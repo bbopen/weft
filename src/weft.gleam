@@ -614,6 +614,41 @@ pub opaque type BorderStyle {
   BorderStyle(value: String)
 }
 
+/// A typed CSS white-space value.
+pub opaque type WhiteSpace {
+  WhiteSpace(value: String)
+}
+
+/// A typed CSS text-overflow value.
+pub opaque type TextOverflow {
+  TextOverflow(value: String)
+}
+
+/// A typed CSS text-transform value.
+pub opaque type TextTransform {
+  TextTransform(value: String)
+}
+
+/// A typed CSS word-break value.
+pub opaque type WordBreak {
+  WordBreak(value: String)
+}
+
+/// A typed CSS overflow-wrap value.
+pub opaque type OverflowWrap {
+  OverflowWrap(value: String)
+}
+
+/// A typed CSS color-scheme value.
+pub opaque type ColorScheme {
+  ColorScheme(value: String)
+}
+
+/// A single CSS filter function (for `filter` and `backdrop-filter`).
+pub opaque type Filter {
+  Filter(value: String)
+}
+
 /// A single CSS box-shadow entry.
 pub opaque type Shadow {
   Shadow(
@@ -1106,6 +1141,48 @@ fn text_align_value(align: TextAlign) -> String {
 fn border_style_value(style: BorderStyle) -> String {
   case style {
     BorderStyle(value:) -> value
+  }
+}
+
+fn white_space_value(ws: WhiteSpace) -> String {
+  case ws {
+    WhiteSpace(value:) -> value
+  }
+}
+
+fn text_overflow_value(to: TextOverflow) -> String {
+  case to {
+    TextOverflow(value:) -> value
+  }
+}
+
+fn text_transform_value(tt: TextTransform) -> String {
+  case tt {
+    TextTransform(value:) -> value
+  }
+}
+
+fn word_break_value(wb: WordBreak) -> String {
+  case wb {
+    WordBreak(value:) -> value
+  }
+}
+
+fn overflow_wrap_value(ow: OverflowWrap) -> String {
+  case ow {
+    OverflowWrap(value:) -> value
+  }
+}
+
+fn color_scheme_value(cs: ColorScheme) -> String {
+  case cs {
+    ColorScheme(value:) -> value
+  }
+}
+
+fn filter_value(f: Filter) -> String {
+  case f {
+    Filter(value:) -> value
   }
 }
 
@@ -1941,6 +2018,141 @@ pub fn border_style_none() -> BorderStyle {
   BorderStyle(value: "none")
 }
 
+// --- WhiteSpace constructors ------------------------------------------------
+
+/// Normal white-space handling (collapses whitespace, wraps at soft breaks).
+pub fn white_space_normal() -> WhiteSpace {
+  WhiteSpace(value: "normal")
+}
+
+/// Prevent text from wrapping to the next line.
+pub fn white_space_nowrap() -> WhiteSpace {
+  WhiteSpace(value: "nowrap")
+}
+
+/// Preserve whitespace as authored (like `<pre>`).
+pub fn white_space_pre() -> WhiteSpace {
+  WhiteSpace(value: "pre")
+}
+
+/// Preserve whitespace but allow wrapping at soft breaks.
+pub fn white_space_pre_wrap() -> WhiteSpace {
+  WhiteSpace(value: "pre-wrap")
+}
+
+/// Collapse whitespace but preserve newlines.
+pub fn white_space_pre_line() -> WhiteSpace {
+  WhiteSpace(value: "pre-line")
+}
+
+// --- TextOverflow constructors ----------------------------------------------
+
+/// Clip overflowing text (default browser behavior).
+pub fn text_overflow_clip() -> TextOverflow {
+  TextOverflow(value: "clip")
+}
+
+/// Show an ellipsis when text overflows its container.
+pub fn text_overflow_ellipsis() -> TextOverflow {
+  TextOverflow(value: "ellipsis")
+}
+
+// --- TextTransform constructors ---------------------------------------------
+
+/// Transform text to uppercase.
+pub fn text_transform_uppercase() -> TextTransform {
+  TextTransform(value: "uppercase")
+}
+
+/// Transform text to lowercase.
+pub fn text_transform_lowercase() -> TextTransform {
+  TextTransform(value: "lowercase")
+}
+
+/// Capitalize the first letter of each word.
+pub fn text_transform_capitalize() -> TextTransform {
+  TextTransform(value: "capitalize")
+}
+
+/// No text transformation.
+pub fn text_transform_none() -> TextTransform {
+  TextTransform(value: "none")
+}
+
+// --- WordBreak constructors -------------------------------------------------
+
+/// Break words at any character to prevent overflow.
+pub fn word_break_break_all() -> WordBreak {
+  WordBreak(value: "break-all")
+}
+
+/// Only break at word boundaries except where overflow would occur.
+pub fn word_break_break_word() -> WordBreak {
+  WordBreak(value: "break-word")
+}
+
+/// Do not break CJK text (keep runs together).
+pub fn word_break_keep_all() -> WordBreak {
+  WordBreak(value: "keep-all")
+}
+
+// --- OverflowWrap constructors ----------------------------------------------
+
+/// Allow breaking at any point if no other break opportunity exists.
+pub fn overflow_wrap_anywhere() -> OverflowWrap {
+  OverflowWrap(value: "anywhere")
+}
+
+/// Break long words only if they would otherwise overflow.
+pub fn overflow_wrap_break_word() -> OverflowWrap {
+  OverflowWrap(value: "break-word")
+}
+
+// --- ColorScheme constructors -----------------------------------------------
+
+/// Indicate this element uses a light color scheme (native controls render light).
+pub fn color_scheme_light() -> ColorScheme {
+  ColorScheme(value: "light")
+}
+
+/// Indicate this element uses a dark color scheme (native controls render dark).
+pub fn color_scheme_dark() -> ColorScheme {
+  ColorScheme(value: "dark")
+}
+
+/// Indicate this element supports both light and dark color schemes.
+pub fn color_scheme_light_dark() -> ColorScheme {
+  ColorScheme(value: "light dark")
+}
+
+// --- Filter constructors ----------------------------------------------------
+
+/// A blur filter function.
+pub fn filter_blur(radius radius: CssLength) -> Filter {
+  Filter(value: "blur(" <> css_length_value(radius) <> ")")
+}
+
+/// A brightness filter function (1.0 = unchanged).
+pub fn filter_brightness(amount amount: Float) -> Filter {
+  Filter(value: "brightness(" <> normalize_float_string(amount, 4) <> ")")
+}
+
+/// A contrast filter function (1.0 = unchanged).
+pub fn filter_contrast(amount amount: Float) -> Filter {
+  Filter(value: "contrast(" <> normalize_float_string(amount, 4) <> ")")
+}
+
+/// A saturation filter function (1.0 = unchanged, 0.0 = grayscale).
+pub fn filter_saturate(amount amount: Float) -> Filter {
+  Filter(value: "saturate(" <> normalize_float_string(amount, 4) <> ")")
+}
+
+/// An opacity filter function (1.0 = fully opaque, 0.0 = fully transparent).
+pub fn filter_opacity(amount amount: Float) -> Filter {
+  let clamped = clamp_float(amount, min: 0.0, max: 1.0)
+  Filter(value: "opacity(" <> normalize_float_string(clamped, 4) <> ")")
+}
+
 /// Create a single `box-shadow` entry.
 pub fn shadow(
   x x: CssLength,
@@ -2026,6 +2238,87 @@ pub fn rgba(
     <> a
     <> ")",
   )
+}
+
+/// Construct an HSL color.
+pub fn hsl(
+  hue hue: Int,
+  saturation saturation: Int,
+  lightness lightness: Int,
+) -> Color {
+  Color(
+    value: "hsl("
+    <> int.to_string(hue)
+    <> ", "
+    <> int.to_string(saturation)
+    <> "%, "
+    <> int.to_string(lightness)
+    <> "%)",
+  )
+}
+
+/// Construct an HSLA color with alpha channel.
+pub fn hsla(
+  hue hue: Int,
+  saturation saturation: Int,
+  lightness lightness: Int,
+  alpha alpha: Float,
+) -> Color {
+  let a = normalize_float_string(clamp_float(alpha, min: 0.0, max: 1.0), 4)
+  Color(
+    value: "hsla("
+    <> int.to_string(hue)
+    <> ", "
+    <> int.to_string(saturation)
+    <> "%, "
+    <> int.to_string(lightness)
+    <> "%, "
+    <> a
+    <> ")",
+  )
+}
+
+/// A fully transparent color.
+pub fn transparent() -> Color {
+  Color(value: "transparent")
+}
+
+/// The `currentColor` CSS keyword — inherits the element's `color` property.
+pub fn current_color() -> Color {
+  Color(value: "currentColor")
+}
+
+/// Construct a Color from a hex string (e.g. `"#ff0000"` or `"#ccc"`).
+///
+/// The string is used as-is -- no validation is performed.  This is an
+/// escape hatch for CSS hex color literals that cannot be expressed
+/// through `rgb()` / `hsl()` constructors.
+pub fn hex(value value: String) -> Color {
+  Color(value: value)
+}
+
+/// Construct a Color from a CSS `var()` reference.
+///
+/// Wraps the given CSS custom-property expression as a typed Color so
+/// it can flow through APIs that require `weft.Color`.  The string is
+/// embedded verbatim -- callers are responsible for well-formed syntax
+/// (e.g. `"var(--my-color, #fff)"`).
+pub fn css_color(value value: String) -> Color {
+  Color(value: value)
+}
+
+/// The CSS keyword `none`, used where an absent color is needed
+/// (for example `fill: none` in SVG).
+pub fn none_color() -> Color {
+  Color(value: "none")
+}
+
+/// Serialize a typed `Color` to its CSS string representation.
+///
+/// Useful for passing weft colors to APIs that require raw CSS strings
+/// (for example SVG attributes or third-party chart libraries).
+pub fn color_to_css(color color: Color) -> String {
+  color_value(color)
 }
 
 fn color_value(color: Color) -> String {
@@ -2120,6 +2413,51 @@ pub fn padding_xy(x x: Int, y y: Int) -> Attribute {
       Declaration(
         property: "padding",
         value: int.to_string(y) <> "px " <> int.to_string(x) <> "px",
+      ),
+    ]),
+  )
+}
+
+/// Apply top padding only.
+pub fn padding_top(pixels pixels: Int) -> Attribute {
+  attr(
+    rule_from_declarations([
+      Declaration(property: "padding-top", value: int.to_string(pixels) <> "px"),
+    ]),
+  )
+}
+
+/// Apply bottom padding only.
+pub fn padding_bottom(pixels pixels: Int) -> Attribute {
+  attr(
+    rule_from_declarations([
+      Declaration(
+        property: "padding-bottom",
+        value: int.to_string(pixels) <> "px",
+      ),
+    ]),
+  )
+}
+
+/// Apply left padding only.
+pub fn padding_left(pixels pixels: Int) -> Attribute {
+  attr(
+    rule_from_declarations([
+      Declaration(
+        property: "padding-left",
+        value: int.to_string(pixels) <> "px",
+      ),
+    ]),
+  )
+}
+
+/// Apply right padding only.
+pub fn padding_right(pixels pixels: Int) -> Attribute {
+  attr(
+    rule_from_declarations([
+      Declaration(
+        property: "padding-right",
+        value: int.to_string(pixels) <> "px",
       ),
     ]),
   )
@@ -3059,11 +3397,160 @@ pub fn text_align(align align: TextAlign) -> Attribute {
   )
 }
 
+/// Set the `white-space` behavior for an element.
+pub fn white_space(value value: WhiteSpace) -> Attribute {
+  attr(
+    rule_from_declarations([
+      Declaration(property: "white-space", value: white_space_value(value)),
+    ]),
+  )
+}
+
+/// Set the `text-overflow` behavior for an element.
+///
+/// Typically combined with `white_space(white_space_nowrap())` and
+/// `overflow(overflow_hidden())` for ellipsis truncation.
+pub fn text_overflow(value value: TextOverflow) -> Attribute {
+  attr(
+    rule_from_declarations([
+      Declaration(property: "text-overflow", value: text_overflow_value(value)),
+    ]),
+  )
+}
+
+/// Set the `text-transform` for an element.
+pub fn text_transform(value value: TextTransform) -> Attribute {
+  attr(
+    rule_from_declarations([
+      Declaration(
+        property: "text-transform",
+        value: text_transform_value(value),
+      ),
+    ]),
+  )
+}
+
+/// Set the `word-break` behavior for an element.
+pub fn word_break(value value: WordBreak) -> Attribute {
+  attr(
+    rule_from_declarations([
+      Declaration(property: "word-break", value: word_break_value(value)),
+    ]),
+  )
+}
+
+/// Set the `overflow-wrap` behavior for an element.
+pub fn overflow_wrap(value value: OverflowWrap) -> Attribute {
+  attr(
+    rule_from_declarations([
+      Declaration(property: "overflow-wrap", value: overflow_wrap_value(value)),
+    ]),
+  )
+}
+
+/// Set the `color-scheme` for an element (affects native control theming).
+pub fn color_scheme(scheme scheme: ColorScheme) -> Attribute {
+  attr(
+    rule_from_declarations([
+      Declaration(property: "color-scheme", value: color_scheme_value(scheme)),
+    ]),
+  )
+}
+
+/// Apply CSS `filter` effects to an element.
+///
+/// An empty list renders `filter: none`.
+pub fn filter(filters filters: List(Filter)) -> Attribute {
+  let value = case filters {
+    [] -> "none"
+    _ ->
+      filters
+      |> list.map(filter_value)
+      |> string.join(with: " ")
+  }
+  attr(rule_from_declarations([Declaration(property: "filter", value: value)]))
+}
+
+/// Apply CSS `backdrop-filter` effects to an element's backdrop.
+///
+/// An empty list renders `backdrop-filter: none`.
+pub fn backdrop_filter(filters filters: List(Filter)) -> Attribute {
+  let value = case filters {
+    [] -> "none"
+    _ ->
+      filters
+      |> list.map(filter_value)
+      |> string.join(with: " ")
+  }
+  attr(
+    rule_from_declarations([
+      Declaration(property: "backdrop-filter", value: value),
+    ]),
+  )
+}
+
+/// Set the `order` of a flex or grid item.
+pub fn order(value value: Int) -> Attribute {
+  attr(
+    rule_from_declarations([
+      Declaration(property: "order", value: int.to_string(value)),
+    ]),
+  )
+}
+
 /// Round the corners of an element using `border-radius`.
 pub fn rounded(radius radius: CssLength) -> Attribute {
   attr(
     rule_from_declarations([
       Declaration(property: "border-radius", value: css_length_value(radius)),
+    ]),
+  )
+}
+
+/// Round the top-left corner of an element.
+pub fn rounded_top_left(radius radius: CssLength) -> Attribute {
+  attr(
+    rule_from_declarations([
+      Declaration(
+        property: "border-top-left-radius",
+        value: css_length_value(radius),
+      ),
+    ]),
+  )
+}
+
+/// Round the top-right corner of an element.
+pub fn rounded_top_right(radius radius: CssLength) -> Attribute {
+  attr(
+    rule_from_declarations([
+      Declaration(
+        property: "border-top-right-radius",
+        value: css_length_value(radius),
+      ),
+    ]),
+  )
+}
+
+/// Round the bottom-left corner of an element.
+pub fn rounded_bottom_left(radius radius: CssLength) -> Attribute {
+  attr(
+    rule_from_declarations([
+      Declaration(
+        property: "border-bottom-left-radius",
+        value: css_length_value(radius),
+      ),
+    ]),
+  )
+}
+
+/// Round the bottom-right corner of an element.
+pub fn rounded_bottom_right(radius radius: CssLength) -> Attribute {
+  attr(
+    rule_from_declarations([
+      Declaration(
+        property: "border-bottom-right-radius",
+        value: css_length_value(radius),
+      ),
     ]),
   )
 }
@@ -3343,6 +3830,27 @@ pub fn margin_bottom(pixels pixels: Int) -> Attribute {
     rule_from_declarations([
       Declaration(
         property: "margin-bottom",
+        value: int.to_string(pixels) <> "px",
+      ),
+    ]),
+  )
+}
+
+/// Apply left margin only.
+pub fn margin_left(pixels pixels: Int) -> Attribute {
+  attr(
+    rule_from_declarations([
+      Declaration(property: "margin-left", value: int.to_string(pixels) <> "px"),
+    ]),
+  )
+}
+
+/// Apply right margin only.
+pub fn margin_right(pixels pixels: Int) -> Attribute {
+  attr(
+    rule_from_declarations([
+      Declaration(
+        property: "margin-right",
         value: int.to_string(pixels) <> "px",
       ),
     ]),
